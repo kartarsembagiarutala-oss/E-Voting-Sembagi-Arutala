@@ -1,135 +1,142 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Panel Admin E-Voting</title>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 40px;
-    }
-
-    .container {
-      max-width: 700px;
-      margin: auto;
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    }
-
-    h2 {
-      text-align: center;
-    }
-
-    h3 {
-      margin-top: 30px;
-    }
-
-    input, textarea {
-      width: 100%;
-      padding: 10px;
-      margin: 6px 0;
-      font-size: 14px;
-    }
-
-    button {
-      padding: 10px 15px;
-      background: #2563eb;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 5px;
-    }
-
-    button:hover {
-      background: #1d4ed8;
-    }
-
-    .logout {
-      background: #dc2626;
-      float: right;
-    }
-
-    hr {
-      margin: 25px 0;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Panel Admin - E Voting</title>
+<style>
+body {
+  font-family: Arial;
+  background: #f4f6f8;
+  padding: 20px;
+}
+.card {
+  background: white;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+}
+input {
+  padding: 8px;
+  margin: 5px 0;
+  width: 100%;
+}
+button {
+  padding: 8px 15px;
+  margin-top: 10px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+}
+</style>
 </head>
 
 <body>
 
-<div class="container">
+<h2>Panel Admin E-Voting Karang Taruna</h2>
 
-<h2>Panel Admin E-Voting</h2>
-<button class="logout" id="logout">Logout</button>
+<!-- ================= TAMBAH PEMILIH ================= -->
+<div class="card">
+  <h3>Tambah Pemilih</h3>
 
-<hr>
+  <input id="pnama" placeholder="Nama Pemilih">
+  <input id="pkode" placeholder="Kode Pemilih (contoh: KT001)">
+  <input id="ppass" placeholder="Password">
 
-<h3>Tambah Pemilih</h3>
-<input id="pNama" placeholder="Nama Pemilih">
-<input id="pEmail" placeholder="Email Pemilih">
-<input id="pPassword" placeholder="Password Pemilih">
-<button onclick="tambahPemilih()">Tambah Pemilih</button>
-<h3>Daftar Pemilih</h3>
-
-<table border="1" cellpadding="8">
-  <thead>
-    <tr>
-      <th>Nama</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody id="listPemilih"></tbody>
-</table>
-
-<hr>
-
-<h3>Tambah Kandidat</h3>
-<input id="kNama" placeholder="Nama Kandidat">
-<textarea id="kVisi" placeholder="Visi & Misi"></textarea>
-<button onclick="tambahKandidat()">Tambah Kandidat</button>
-
+  <button onclick="addPemilih()">Tambah Pemilih</button>
 </div>
 
-<script type="module" src="admin.js"></script>
-  import { getDocs } from
-"https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+<!-- ================= DAFTAR PEMILIH ================= -->
+<div class="card">
+  <h3>Daftar Pemilih</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Kode</th>
+        <th>Nama</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="listPemilih"></tbody>
+  </table>
+</div>
+
+<button onclick="logout()">Logout Admin</button>
+
+<!-- ================= SCRIPT ================= -->
+<script type="module">
+import { auth, db } from "./firebase.js";
+import { signOut } from
+"https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+import {
+  collection,
+  getDocs,
+  setDoc,
+  doc
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+/* ================= TAMBAH PEMILIH ================= */
+window.addPemilih = async () => {
+  const nama = pnama.value.trim();
+  const kode = pkode.value.trim();
+  const pass = ppass.value.trim();
+
+  if (!nama || !kode || !pass) {
+    alert("Semua data wajib diisi");
+    return;
+  }
+
+  try {
+    await setDoc(doc(db, "pemilih", kode), {
+      nama: nama,
+      password: pass,
+      sudahMemilih: false
+    });
+
+    alert("Pemilih berhasil ditambahkan");
+    loadPemilih();
+
+    pnama.value = "";
+    pkode.value = "";
+    ppass.value = "";
+
+  } catch (err) {
+    alert("Gagal menambahkan pemilih: " + err.message);
+  }
+};
+
+/* ================= LOAD DAFTAR PEMILIH ================= */
 async function loadPemilih() {
   const tbody = document.getElementById("listPemilih");
   tbody.innerHTML = "";
 
   const snap = await getDocs(collection(db, "pemilih"));
-  snap.forEach(docu => {
-    const data = docu.data();
+  snap.forEach(d => {
+    const p = d.data();
     tbody.innerHTML += `
       <tr>
-        <td>${data.nama}</td>
-        <td>
-          ${data.sudahMemilih ? "✅ Sudah Memilih" : "❌ Belum Memilih"}
-        </td>
+        <td>${d.id}</td>
+        <td>${p.nama}</td>
+        <td>${p.sudahMemilih ? "✅ Sudah Memilih" : "❌ Belum Memilih"}</td>
       </tr>
     `;
   });
 }
+
 loadPemilih();
-window.addPemilih = async () => {
-  const email=pemail.value, pass=ppass.value, nama=pnama.value;
-  const u = await createUserWithEmailAndPassword(auth,email,pass);
-  await setDoc(doc(db,"pemilih",u.user.uid),{
-    nama, sudahMemilih:false
-  });
-  alert("Pemilih ditambahkan");
-  loadPemilih();
+
+/* ================= LOGOUT ================= */
+window.logout = async () => {
+  await signOut(auth);
+  location.href = "login.html";
 };
+</script>
 
 </body>
-
 </html>
-
-
-
