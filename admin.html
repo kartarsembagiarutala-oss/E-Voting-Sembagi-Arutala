@@ -63,25 +63,31 @@
 
 <body>
 
+<div class="container">
+
 <h2>Panel Admin E-Voting</h2>
-<button id="logout">Logout</button>
+<button class="logout" id="logout">Logout</button>
 
 <hr>
 
 <h3>Tambah Pemilih</h3>
-<input id="pNama" placeholder="Nama Pemilih"><br>
-<input id="pEmail" placeholder="Email Pemilih"><br>
-<input id="pPassword" placeholder="Password Pemilih"><br>
+<input id="pNama" placeholder="Nama Pemilih">
+<input id="pEmail" placeholder="Email Pemilih">
+<input id="pPassword" placeholder="Password Pemilih">
 <button onclick="tambahPemilih()">Tambah Pemilih</button>
 
 <hr>
 
 <h3>Tambah Kandidat</h3>
-<input id="kNama" placeholder="Nama Kandidat"><br>
-<textarea id="kVisi" placeholder="Visi & Misi"></textarea><br>
+<input id="kNama" placeholder="Nama Kandidat">
+<textarea id="kVisi" placeholder="Visi & Misi"></textarea>
 <button onclick="tambahKandidat()">Tambah Kandidat</button>
+
+</div>
 
 <script type="module" src="admin.js"></script>
 </body>
+
 </html>
+
 
