@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>E-Voting Karang Taruna</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+    }
+    .kandidat {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin: 10px 0;
+      cursor: pointer;
+    }
+    .kandidat:hover {
+      background: #f2f2f2;
+    }
+    button {
+      padding: 10px 15px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Pilih Ketua Karang Taruna</h2>
+<p id="status"></p>
+
+<div id="listKandidat"></div>
+
+<button onclick="logout()">Logout</button>
+
+<script type="module">
+import { auth, db } from "./firebase.js";
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import {
+  doc,
+  getDoc,
+  getDocs,
+  collection,
+  updateDoc,
+  addDoc,
+  increment,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+let currentUID = null;
+
+// CEK LOGIN
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    location.href = "login.html";
+    return;
+  }
+
+  currentUID = user.uid;
+
+  const pemilihRef = doc(db, "pemilih", currentUID);
+  const pemilihSnap = await getDoc(pemilihRef);
+
+  if (!pemilihSnap.exists()) {
+    alert("Data pemilih tidak ditemukan");
+    logout();
+    return;
+  }
+
+  if (pemilihSnap.data().sudahMemilih) {
+    alert("Anda sudah menggunakan hak pilih");
+    logout();
+    return;
+  }
+
+  loadKandidat();
+});
+
+// LOAD KANDIDAT
+async function loadKandidat() {
+  const kandidatCol = collection(db, "kandidat");
+  const kandidatSnap = await getDocs(kandidatCol);
+
+  const container = document.getElementById("listKandidat");
+  container.innerHTML = "";
+
+  kandidatSnap.forEach((docu) => {
+    const data = docu.data();
+    const div = document.createElement("div");
+    div.className = "kandidat";
+    div.innerHTML = `
+      <strong>${data.nama}</strong><br>
+      <small>${data.visi}</small>
+    `;
+    div.onclick = () => pilih(docu.id);
+    container.appendChild(div);
+  });
+}
+
+// PROSES VOTING
+async function pilih(kandidatId) {
+  if (!confirm("Yakin dengan pilihan ini?")) return;
+
+  try {
+    const pemilihRef = doc(db, "pemilih", currentUID);
+    const kandidatRef = doc(db, "kandidat", kandidatId);
+
+    // KUNCI PEMILIH
+    await updateDoc(pemilihRef, {
+      sudahMemilih: true
+    });
+
+    // TAMBAH SUARA
+    await updateDoc(kandidatRef, {
+      jumlahSuara: increment(1)
+    });
+
+    // LOG SUARA
+    await addDoc(collection(db, "log_suara"), {
+      uid: currentUID,
+      kandidatId: kandidatId,
+      waktu: serverTimestamp()
+    });
+
+    alert("Terima kasih, suara Anda berhasil disimpan.");
+    logout();
+
+  } catch (err) {
+    alert("Terjadi kesalahan. Hubungi panitia.");
+    console.error(err);
+  }
+}
+
+// LOGOUT
+function logout() {
+  signOut(auth).then(() => {
+    location.href = "login.html";
+  });
+}
+
+</script>
+</body>
+</html>
