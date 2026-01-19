@@ -75,6 +75,17 @@
 <input id="pEmail" placeholder="Email Pemilih">
 <input id="pPassword" placeholder="Password Pemilih">
 <button onclick="tambahPemilih()">Tambah Pemilih</button>
+<h3>Daftar Pemilih</h3>
+
+<table border="1" cellpadding="8">
+  <thead>
+    <tr>
+      <th>Nama</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody id="listPemilih"></tbody>
+</table>
 
 <hr>
 
@@ -86,8 +97,39 @@
 </div>
 
 <script type="module" src="admin.js"></script>
+  import { getDocs } from
+"https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+async function loadPemilih() {
+  const tbody = document.getElementById("listPemilih");
+  tbody.innerHTML = "";
+
+  const snap = await getDocs(collection(db, "pemilih"));
+  snap.forEach(docu => {
+    const data = docu.data();
+    tbody.innerHTML += `
+      <tr>
+        <td>${data.nama}</td>
+        <td>
+          ${data.sudahMemilih ? "✅ Sudah Memilih" : "❌ Belum Memilih"}
+        </td>
+      </tr>
+    `;
+  });
+}
+loadPemilih();
+window.addPemilih = async () => {
+  const email=pemail.value, pass=ppass.value, nama=pnama.value;
+  const u = await createUserWithEmailAndPassword(auth,email,pass);
+  await setDoc(doc(db,"pemilih",u.user.uid),{
+    nama, sudahMemilih:false
+  });
+  alert("Pemilih ditambahkan");
+  loadPemilih();
+};
+
 </body>
 
 </html>
+
 
 
