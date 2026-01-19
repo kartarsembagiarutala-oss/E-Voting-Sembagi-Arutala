@@ -1,142 +1,92 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Panel Admin - E Voting</title>
-<style>
-body {
-  font-family: Arial;
-  background: #f4f6f8;
-  padding: 20px;
-}
-.card {
-  background: white;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-}
-input {
-  padding: 8px;
-  margin: 5px 0;
-  width: 100%;
-}
-button {
-  padding: 8px 15px;
-  margin-top: 10px;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-th, td {
-  border: 1px solid #ccc;
-  padding: 8px;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>Admin E-Voting</title>
 </head>
 
 <body>
 
-<h2>Panel Admin E-Voting Karang Taruna</h2>
+<h2>Panel Admin E-Voting</h2>
 
-<!-- ================= TAMBAH PEMILIH ================= -->
-<div class="card">
-  <h3>Tambah Pemilih</h3>
+<!-- FORM PEMILIH -->
+<input id="namaPemilih" placeholder="Nama Pemilih">
+<input id="emailPemilih" placeholder="Email Pemilih">
+<input id="passwordPemilih" placeholder="Password Pemilih">
+<button onclick="addPemilih()">Tambah Pemilih</button>
 
-  <input id="pnama" placeholder="Nama Pemilih">
-  <input id="pkode" placeholder="Kode Pemilih (contoh: KT001)">
-  <input id="ppass" placeholder="Password">
+<h3>Daftar Pemilih</h3>
+<table border="1">
+  <thead>
+    <tr>
+      <th>Nama</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody id="listPemilih"></tbody>
+</table>
 
-  <button onclick="addPemilih()">Tambah Pemilih</button>
-</div>
+<hr>
 
-<!-- ================= DAFTAR PEMILIH ================= -->
-<div class="card">
-  <h3>Daftar Pemilih</h3>
+<!-- FORM KANDIDAT -->
+<input id="namaKandidat" placeholder="Nama Kandidat">
+<textarea id="visiMisi" placeholder="Visi & Misi"></textarea>
+<button onclick="addKandidat()">Tambah Kandidat</button>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Kode</th>
-        <th>Nama</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="listPemilih"></tbody>
-  </table>
-</div>
-
-<button onclick="logout()">Logout Admin</button>
-
-<!-- ================= SCRIPT ================= -->
+<!-- ================= SCRIPT HARUS DI SINI ================= -->
 <script type="module">
-import { auth, db } from "./firebase.js";
-import { signOut } from
-"https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
+import { db } from "./firebase.js";
 import {
   collection,
   getDocs,
-  setDoc,
-  doc
+  doc,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-/* ================= TAMBAH PEMILIH ================= */
-window.addPemilih = async () => {
-  const nama = pnama.value.trim();
-  const kode = pkode.value.trim();
-  const pass = ppass.value.trim();
-
-  if (!nama || !kode || !pass) {
-    alert("Semua data wajib diisi");
-    return;
-  }
-
-  try {
-    await setDoc(doc(db, "pemilih", kode), {
-      nama: nama,
-      password: pass,
-      sudahMemilih: false
-    });
-
-    alert("Pemilih berhasil ditambahkan");
-    loadPemilih();
-
-    pnama.value = "";
-    pkode.value = "";
-    ppass.value = "";
-
-  } catch (err) {
-    alert("Gagal menambahkan pemilih: " + err.message);
-  }
-};
-
-/* ================= LOAD DAFTAR PEMILIH ================= */
+/* LOAD PEMILIH */
 async function loadPemilih() {
   const tbody = document.getElementById("listPemilih");
   tbody.innerHTML = "";
 
   const snap = await getDocs(collection(db, "pemilih"));
-  snap.forEach(d => {
-    const p = d.data();
+  snap.forEach(docu => {
+    const d = docu.data();
     tbody.innerHTML += `
       <tr>
-        <td>${d.id}</td>
-        <td>${p.nama}</td>
-        <td>${p.sudahMemilih ? "✅ Sudah Memilih" : "❌ Belum Memilih"}</td>
+        <td>${d.nama}</td>
+        <td>${d.sudahMemilih ? "✅ Sudah Memilih" : "❌ Belum Memilih"}</td>
       </tr>
     `;
   });
 }
 
+/* TAMBAH PEMILIH */
+window.addPemilih = async () => {
+  const nama = namaPemilih.value;
+  const email = emailPemilih.value;
+  const pass = passwordPemilih.value;
+
+  if (!nama || !email || !pass) {
+    alert("Lengkapi data");
+    return;
+  }
+
+  const kode = "KT" + Date.now(); // kode unik
+
+  await setDoc(doc(db, "pemilih", kode), {
+    nama,
+    email,
+    password: pass,
+    sudahMemilih: false
+  });
+
+  alert("Pemilih ditambahkan\nKode: " + kode);
+  loadPemilih();
+};
+
 loadPemilih();
 
-/* ================= LOGOUT ================= */
-window.logout = async () => {
-  await signOut(auth);
-  location.href = "login.html";
-};
 </script>
-
 </body>
 </html>
