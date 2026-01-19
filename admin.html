@@ -1,142 +1,230 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-<meta charset="UTF-8">
-<title>Panel Admin - E Voting</title>
-<style>
-body {
-  font-family: Arial;
-  background: #f4f6f8;
-  padding: 20px;
-}
-.card {
-  background: white;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-}
-input {
-  padding: 8px;
-  margin: 5px 0;
-  width: 100%;
-}
-button {
-  padding: 8px 15px;
-  margin-top: 10px;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-th, td {
-  border: 1px solid #ccc;
-  padding: 8px;
-}
-</style>
+  <meta charset="UTF-8">
+  <title>Panel Admin E-Voting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1, h2 {
+      text-align: center;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin: 6px 0;
+      box-sizing: border-box;
+    }
+
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+    }
+
+    img {
+      max-width: 100px;
+      border-radius: 6px;
+    }
+
+    .danger {
+      background: #dc2626;
+    }
+
+    .logout {
+      background: #555;
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 
 <body>
+  <div class="container">
+    <h1>Panel Admin E-Voting</h1>
+    <button class="logout" onclick="logout()">Logout</button>
 
-<h2>Panel Admin E-Voting Karang Taruna</h2>
+    <!-- ================= PEMILIH ================= -->
+    <h2>Tambah Pemilih</h2>
+    <input id="namaPemilih" placeholder="Nama Pemilih">
+    <input id="emailPemilih" placeholder="Email Pemilih">
+    <input id="passwordPemilih" placeholder="Password Pemilih">
+    <button onclick="tambahPemilih()">Tambah Pemilih</button>
 
-<!-- ================= TAMBAH PEMILIH ================= -->
-<div class="card">
-  <h3>Tambah Pemilih</h3>
+    <h2>Daftar Pemilih</h2>
+    <div id="listPemilih"></div>
 
-  <input id="pnama" placeholder="Nama Pemilih">
-  <input id="pkode" placeholder="Kode Pemilih (contoh: KT001)">
-  <input id="ppass" placeholder="Password">
+    <hr>
 
-  <button onclick="addPemilih()">Tambah Pemilih</button>
-</div>
+    <!-- ================= KANDIDAT ================= -->
+    <h2>Tambah Kandidat</h2>
+    <input id="namaKandidat" placeholder="Nama Kandidat">
+    <textarea id="visiKandidat" placeholder="Visi & Misi"></textarea>
+    <input type="file" id="fotoKandidat">
+    <button onclick="tambahKandidat()">Tambah Kandidat</button>
 
-<!-- ================= DAFTAR PEMILIH ================= -->
-<div class="card">
-  <h3>Daftar Pemilih</h3>
+    <h2>Daftar Kandidat</h2>
+    <div id="listKandidat"></div>
+  </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Kode</th>
-        <th>Nama</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody id="listPemilih"></tbody>
-  </table>
-</div>
+  <!-- ================= SCRIPT ================= -->
+  <script type="module">
+    import { auth, db, storage } from "./firebase.js";
 
-<button onclick="logout()">Logout Admin</button>
+    import {
+      collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-<!-- ================= SCRIPT ================= -->
-<script type="module">
-import { auth, db } from "./firebase.js";
-import { signOut } from
-"https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import {
+      createUserWithEmailAndPassword, signOut
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
-import {
-  collection,
-  getDocs,
-  setDoc,
-  doc
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import {
+      ref, uploadBytes, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js";
 
-/* ================= TAMBAH PEMILIH ================= */
-window.addPemilih = async () => {
-  const nama = pnama.value.trim();
-  const kode = pkode.value.trim();
-  const pass = ppass.value.trim();
+    /* ================= LOGOUT ================= */
+    window.logout = async () => {
+      await signOut(auth);
+      location.href = "login.html";
+    };
 
-  if (!nama || !kode || !pass) {
-    alert("Semua data wajib diisi");
-    return;
-  }
+    /* ================= PEMILIH ================= */
+    window.tambahPemilih = async () => {
+      const nama = namaPemilih.value;
+      const email = emailPemilih.value;
+      const pass = passwordPemilih.value;
 
-  try {
-    await setDoc(doc(db, "pemilih", kode), {
-      nama: nama,
-      password: pass,
-      sudahMemilih: false
-    });
+      if (!nama || !email || !pass) {
+        alert("Lengkapi data pemilih");
+        return;
+      }
 
-    alert("Pemilih berhasil ditambahkan");
+      const user = await createUserWithEmailAndPassword(auth, email, pass);
+
+      await addDoc(collection(db, "pemilih"), {
+        uid: user.user.uid,
+        nama,
+        email,
+        sudahMemilih: false,
+        createdAt: serverTimestamp()
+      });
+
+      alert("Pemilih berhasil ditambahkan");
+      namaPemilih.value = "";
+      emailPemilih.value = "";
+      passwordPemilih.value = "";
+      loadPemilih();
+    };
+
+    async function loadPemilih() {
+      listPemilih.innerHTML = "";
+      const snap = await getDocs(collection(db, "pemilih"));
+
+      snap.forEach(d => {
+        const p = d.data();
+        listPemilih.innerHTML += `
+          <div class="card">
+            <b>${p.nama}</b><br>
+            ${p.email}<br>
+            Status: ${p.sudahMemilih ? "✅ Sudah Memilih" : "❌ Belum Memilih"}<br>
+            <button class="danger" onclick="hapusPemilih('${d.id}')">Hapus</button>
+          </div>
+        `;
+      });
+    }
+
+    window.hapusPemilih = async (id) => {
+      if (confirm("Hapus pemilih ini?")) {
+        await deleteDoc(doc(db, "pemilih", id));
+        loadPemilih();
+      }
+    };
+
+    /* ================= KANDIDAT ================= */
+    window.tambahKandidat = async () => {
+      const nama = namaKandidat.value;
+      const visi = visiKandidat.value;
+      const foto = fotoKandidat.files[0];
+
+      if (!nama || !visi || !foto) {
+        alert("Lengkapi data kandidat");
+        return;
+      }
+
+      const fotoRef = ref(storage, "kandidat/" + Date.now());
+      await uploadBytes(fotoRef, foto);
+      const fotoURL = await getDownloadURL(fotoRef);
+
+      await addDoc(collection(db, "kandidat"), {
+        nama,
+        visi,
+        foto: fotoURL,
+        suara: 0,
+        createdAt: serverTimestamp()
+      });
+
+      alert("Kandidat ditambahkan");
+      namaKandidat.value = "";
+      visiKandidat.value = "";
+      fotoKandidat.value = "";
+      loadKandidat();
+    };
+
+    async function loadKandidat() {
+      listKandidat.innerHTML = "";
+      const snap = await getDocs(collection(db, "kandidat"));
+
+      snap.forEach(d => {
+        const k = d.data();
+        listKandidat.innerHTML += `
+          <div class="card">
+            <img src="${k.foto}"><br>
+            <b>${k.nama}</b><br>
+            <small>${k.visi}</small><br><br>
+            <button class="danger" onclick="hapusKandidat('${d.id}')">Hapus</button>
+          </div>
+        `;
+      });
+    }
+
+    window.hapusKandidat = async (id) => {
+      if (confirm("Hapus kandidat ini?")) {
+        await deleteDoc(doc(db, "kandidat", id));
+        loadKandidat();
+      }
+    };
+
     loadPemilih();
-
-    pnama.value = "";
-    pkode.value = "";
-    ppass.value = "";
-
-  } catch (err) {
-    alert("Gagal menambahkan pemilih: " + err.message);
-  }
-};
-
-/* ================= LOAD DAFTAR PEMILIH ================= */
-async function loadPemilih() {
-  const tbody = document.getElementById("listPemilih");
-  tbody.innerHTML = "";
-
-  const snap = await getDocs(collection(db, "pemilih"));
-  snap.forEach(d => {
-    const p = d.data();
-    tbody.innerHTML += `
-      <tr>
-        <td>${d.id}</td>
-        <td>${p.nama}</td>
-        <td>${p.sudahMemilih ? "✅ Sudah Memilih" : "❌ Belum Memilih"}</td>
-      </tr>
-    `;
-  });
-}
-
-loadPemilih();
-
-/* ================= LOGOUT ================= */
-window.logout = async () => {
-  await signOut(auth);
-  location.href = "login.html";
-};
-</script>
-
+    loadKandidat();
+  </script>
 </body>
 </html>
