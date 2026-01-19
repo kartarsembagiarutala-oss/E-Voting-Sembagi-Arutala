@@ -4,7 +4,6 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth
 import { getFirestore } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  const firebaseConfig = {
   apiKey: "AIzaSyCelzhmXi60Q9KoJfLxRIXVLEnc_8VMCSI",
   authDomain: "e-voting-sembagi-arutala.firebaseapp.com",
   projectId: "e-voting-sembagi-arutala",
@@ -17,4 +16,5 @@ export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 </script>
+
 
