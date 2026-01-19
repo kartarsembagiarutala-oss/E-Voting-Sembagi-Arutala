@@ -1,136 +1,93 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-  <title>Login Pemilih</title>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      .login-box {
-  width: 340px;
-  margin: 100px auto;
-  background: #ffffff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+<meta charset="UTF-8">
+<title>Login Pemilih</title>
+<style>
+body {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  background:#f4f6f8;
+  font-family:Arial;
 }
-
-.login-box h2 {
-  text-align: center;
-  margin-bottom: 20px;
+.card {
+  background:white;
+  padding:30px;
+  width:320px;
+  border-radius:10px;
+  text-align:center;
 }
-
-.login-box input {
-  width: 100%;
-  padding: 13px;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 16px;
+input {
+  width:100%;
+  padding:10px;
+  margin:8px 0;
 }
-
-.login-box button {
-  width: 100%;
-  padding: 10px;
-  background: #f4b400;
-  border: none;
-  border-radius: 6px;
-  color: #fff;
-  font-size: 15px;
-  cursor: pointer;
+button {
+  width:100%;
+  padding:10px;
+  margin-top:10px;
 }
-
-.login-box button:hover {
-  background: #e0a800;
-}
-
-    }
-
-    .login-box {
-      width: 300px;
-      margin: 100px auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-    }
-
-    .brand {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .brand img {
-      max-width: 120px;
-      margin-bottom: 10px;
-    }
-
-    .brand h1 {
-      font-size: 18px;
-      margin: 0;
-      color: #333;
-    }
-  </style>
+</style>
 </head>
 
 <body>
 
-  <div class="login-box">
-   <div class="brand">
-  <img src="logo.png" alt="Logo Karang Taruna">
-  <h1>E-Voting Pemilihan</h1>
-     <h1>Karang Taruna Sembagi Arutala</h1>
+<div class="card">
+  <h2>Login Pemilih</h2>
+  <input id="kode" placeholder="Kode Pemilih (KT001)">
+  <input id="password" type="password" placeholder="Password">
+  <button onclick="loginPemilih()">Masuk</button>
 </div>
 
-    <h2>Login</h2>
+<script type="module">
+import { db } from "./firebase.js";
+import {
+  doc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-    <input type="email" id="email" placeholder="Email pemilih" />
-    <input type="password" id="password" placeholder="Password" />
+window.loginPemilih = async () => {
+  const kode = document.getElementById("kode").value.trim();
+  const pass = document.getElementById("password").value.trim();
 
-    <button id="loginBtn">Masuk</button>
+  if (!kode || !pass) {
+    alert("Kode dan password wajib diisi");
+    return;
+  }
 
-    <div class="error" id="error"></div>
-  </div>
+  try {
+    const ref = doc(db, "pemilih", kode);
+    const snap = await getDoc(ref);
 
-  <script type="module">
-    import { auth } from "./firebase.js";
-    import { signInWithEmailAndPassword } from
-      "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    if (!snap.exists()) {
+      alert("Kode pemilih tidak ditemukan");
+      return;
+    }
 
-    window.login = function () {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const errorDiv = document.getElementById("error");
+    const data = snap.data();
 
-      signInWithEmailAndPassword(auth, email, password)
-        .then(() => {
-          window.location.href = "vote.html";
-        })
-        .catch((error) => {
-          errorDiv.innerText = "Login gagal: " + error.message;
-        });
-    };
-  </script>
+    if (data.password !== pass) {
+      alert("Password salah");
+      return;
+    }
+
+    if (data.sudahMemilih) {
+      alert("Anda sudah melakukan voting");
+      return;
+    }
+
+    // simpan sesi login
+    sessionStorage.setItem("pemilih", kode);
+
+    location.href = "vote.html";
+
+  } catch (err) {
+    alert("Error: " + err.message);
+  }
+};
+</script>
 
 </body>
 </html>
-<script type="module">
-  import { auth } from "./firebase.js";
-  import { signInWithEmailAndPassword } 
-  from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-
-  const btn = document.getElementById("loginBtn");
-
-  btn.addEventListener("click", () => {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
-
-    signInWithEmailAndPassword(auth, email, password)
-      .then(() => {
-        window.location.href = "vote.html";
-      })
-      .catch(err => {
-        alert("Login gagal: " + err.message);
-      });
-  });
-</script>
